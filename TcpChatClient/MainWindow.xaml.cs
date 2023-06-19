@@ -1,17 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+﻿using System.Windows;
 
 namespace TcpChatClient{
     /// <summary>
@@ -20,6 +7,18 @@ namespace TcpChatClient{
     public partial class MainWindow : Window{
         public MainWindow(){
             InitializeComponent();
+        }
+
+        private void ConnectButtonBase_OnClick(object sender, RoutedEventArgs e){
+            _ = TcpChatClientController.Instance.ConnectAsync("127.0.0.1", "admin", "password").ConfigureAwait(false);
+        }
+        
+        private void SendButtonBase_OnClick(object sender, RoutedEventArgs e){
+            _ = TcpChatClientController.Instance.SendMessageAsync("message123");
+        }
+        
+        private void DisconnectButtonBase_OnClick(object sender, RoutedEventArgs e){
+            TcpChatClientController.Instance.Disconnect();
         }
     }
 }

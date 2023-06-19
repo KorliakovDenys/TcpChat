@@ -17,11 +17,35 @@ public class TcpChatDataContext : DbContext{
 
     protected override void OnModelCreating(ModelBuilder modelBuilder){
         modelBuilder.Entity<Message>()
-            .Property(c => c.IsDelivered)
+            .Property(m => m.IsDelivered)
             .HasColumnType("bit");
         
         modelBuilder.Entity<Contact>()
             .Property(c => c.IsBlocked)
             .HasColumnType("bit");
+        
+        modelBuilder.Entity<User>()
+            .Property(u => u.IsOnline)
+            .HasColumnType("bit");
+        
+        modelBuilder.Entity<Contact>()
+            .HasOne(c => c.ContactOwner)
+            .WithMany(u => u.Contacts)
+            .HasForeignKey(c => c.ContactOwnerId);
+
+        modelBuilder.Entity<Contact>()
+            .HasOne(c => c.ContactUser)
+            .WithMany()
+            .HasForeignKey(c => c.ContactUserId);
+
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.Sender)
+            .WithMany(u => u.Messages)
+            .HasForeignKey(m => m.SenderId);
+
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.Recipient)
+            .WithMany()
+            .HasForeignKey(m => m.RecipientId);
     }
 }

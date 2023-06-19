@@ -16,4 +16,8 @@
       <PackageReference Include="System.Private.DataContractSerialization" Version="4.3.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Client\" />
+    </ItemGroup>
+
 </Project>

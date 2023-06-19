@@ -1,9 +1,9 @@
-﻿namespace TcpChatLibrary.Models;
+﻿namespace TcpChatLibrary.DbModels;
 
 public class User{
     public int Id{ get; set; }
 
-    public string Name{ get; set; } = null!;
+    public string Login{ get; set; } = null!;
 }
 
 public class UserServerData : User{

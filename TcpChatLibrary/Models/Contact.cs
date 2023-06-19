@@ -1,4 +1,4 @@
-﻿namespace TcpChatLibrary.Models;
+﻿namespace TcpChatLibrary.DbModels;
 
 public class Contact{
      public int Id{ get; set; }

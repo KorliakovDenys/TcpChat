@@ -9,5 +9,13 @@ namespace TcpChatServer{
         public MainWindow(){
             InitializeComponent();
         }
+
+        private void StartButtonBase_OnClick(object sender, RoutedEventArgs e){
+            _ = Server.TcpServer.Instance.StartAsync();
+        }
+
+        private void ButtonBase_OnClick(object sender, RoutedEventArgs e){
+            Server.TcpServer.Instance.Stop();
+        }
     }
 }
