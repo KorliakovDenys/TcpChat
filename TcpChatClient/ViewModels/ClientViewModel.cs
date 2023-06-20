@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.EntityFrameworkCore;
 using Prism.Commands;
 using TcpChatLibrary.Client;
 using TcpChatLibrary.Data;
@@ -21,6 +24,10 @@ public sealed class ClientViewModel : ViewModel{
 
     private readonly TcpChatDataContext _tcpChatDataContext = new();
 
+    private List<User?> _onlineUsers = new();
+
+    private List<User?> _contacts = new();
+
     private string _ip = string.Empty;
 
     private string _port = string.Empty;
@@ -29,15 +36,31 @@ public sealed class ClientViewModel : ViewModel{
 
     private DelegateCommand? _disconnectDelegateCommand;
 
-    public ObservableCollection<User?> OnlineUsers{ get; } = new();
+    public List<User?> OnlineUsers{
+        get => _onlineUsers;
+        set{
+            _onlineUsers = value;
+            OnPropertyChanged();
+        }
+    }
 
-    public ObservableCollection<Contact> Contacts{ get; } = new();
+    public List<User?> Contacts{
+        get => _contacts;
+        set{
+            _contacts = value;
+            OnPropertyChanged();
+        }
+    }
 
     public DelegateCommand ConnectDelegateCommand => _connectDelegateCommand ??= new DelegateCommand(ExecuteConnect);
 
     public DelegateCommand DisconnectDelegateCommand =>
         _disconnectDelegateCommand ??= new DelegateCommand(ExecuteDisconnect);
 
+
+    public ClientViewModel(){
+        _tcpChatDataContext.SavedChanges += TcpChatDataContextOnSavedChanges;
+    }
 
     public string Ip{
         get => _ip;
@@ -71,16 +94,16 @@ public sealed class ClientViewModel : ViewModel{
         }
 
         var authViewModel = new AuthorizationViewModel();
-        
+
         var authWindow = new AuthorizationWindow(authViewModel);
-        
+
         authViewModel.LogInPressed += () => {
             Connect(Ip, int.Parse(Port), authViewModel.Login, authViewModel.Password);
             authWindow.Close();
         };
-        
+
         authViewModel.CancelPressed += () => { authWindow.Close(); };
-        
+
         authWindow.ShowDialog();
     }
 
@@ -93,7 +116,7 @@ public sealed class ClientViewModel : ViewModel{
         _ = HandleResponse(response);
     }
 
-     private async Task HandleResponse(string response){
+    private async Task HandleResponse(string response){
         try{
             var obj = JsonConvertor.ToObject(response);
 
@@ -115,6 +138,8 @@ public sealed class ClientViewModel : ViewModel{
                 default:
                     break;
             }
+
+            await _tcpChatDataContext.SaveChangesAsync();
 
             Debug.WriteLine(response);
         }
@@ -147,8 +172,6 @@ public sealed class ClientViewModel : ViewModel{
                 default:
                     break;
             }
-
-            _tcpChatDataContext.SaveChanges();
         }
         catch (Exception e){
             Debug.WriteLine(e);
@@ -183,8 +206,6 @@ public sealed class ClientViewModel : ViewModel{
                 default:
                     break;
             }
-
-            _tcpChatDataContext.SaveChanges();
         }
         catch (Exception e){
             Debug.WriteLine(e);
@@ -218,14 +239,24 @@ public sealed class ClientViewModel : ViewModel{
                 default:
                     break;
             }
-
-            _tcpChatDataContext.SaveChanges();
         }
         catch (Exception e){
             Debug.WriteLine(e);
         }
 
         return Task.CompletedTask;
+    }
+
+    private void TcpChatDataContextOnSavedChanges(object? sender, SavedChangesEventArgs e){
+        if (sender is not TcpChatDataContext dbContext) return;
+
+        try{
+            OnlineUsers = dbContext.Users!.ToList();
+            Contacts = dbContext.Contacts!.Select(c => c.ContactUser).ToList();
+        }
+        catch (Exception exception){
+            Debug.WriteLine(exception);
+        }
     }
 
     private void ExecuteDisconnect(){
@@ -236,7 +267,7 @@ public sealed class ClientViewModel : ViewModel{
     private void Disconnect(){
         try{
             TcpServerClient.Instance.Disconnect();
-            // TcpServerClient.Instance.ResponseReceived -= OnResponseReceived;
+            TcpServerClient.Instance.ResponseReceived -= OnResponseReceived;
         }
         catch (Exception e){
             Debug.WriteLine(e);

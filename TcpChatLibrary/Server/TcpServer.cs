@@ -103,9 +103,14 @@ public sealed class TcpServer{
         }
     }
 
-    private void DisconnectClient(TcpClient client){
-        foreach (var clients in _authorizedTcpClients.Values){
-            if (clients.Remove(client)) break;
+    private void DisconnectClient(TcpClient tcpClient){
+        foreach (var userServerData in _authorizedTcpClients.Keys){
+            foreach (var client in _authorizedTcpClients[userServerData].Where(client => client.Equals(tcpClient))){
+                _authorizedTcpClients[userServerData].Remove(client);
+                if (_authorizedTcpClients[userServerData].Count == 0){
+                    userServerData.IsOnline = false;
+                }
+            }
         }
     }
 
@@ -122,6 +127,8 @@ public sealed class TcpServer{
                     var fetchedUserServerData = _dataContext.UsersServerData!.First(u => u.Login == userServerData.Login);
                     
                     if (fetchedUserServerData.Password != userServerData.Password) return;
+
+                    fetchedUserServerData.IsOnline = true;
 
                     userServerData = fetchedUserServerData;
                     

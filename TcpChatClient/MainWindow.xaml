@@ -66,8 +66,8 @@
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding ContactUser.Login, FallbackValue='null login'}" />
-                                    <TextBlock Text="{Binding ContactUser.IsOnline, FallbackValue='null state'}" />
+                                    <TextBlock Text="{Binding Login, FallbackValue='null login'}" />
+                                    <TextBlock Text="{Binding IsOnline, FallbackValue='null state'}" />
                                 </StackPanel>
                             </DataTemplate>
                         </ListView.ItemTemplate>
