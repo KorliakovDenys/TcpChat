@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace TcpChatClient.ViewModels;
+namespace TcpChatLibrary.Models;
 
 public abstract class ViewModel : INotifyPropertyChanged{
     public event PropertyChangedEventHandler? PropertyChanged;

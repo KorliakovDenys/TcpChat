@@ -1,33 +1,46 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TcpChatLibrary.Models;
 
-namespace TcpChatServer.Data;
+namespace TcpChatLibrary.Data;
 
 public class TcpChatDataContext : DbContext{
-    public DbSet<UserServerData>? Users{ get; set; }
+    private readonly string _connectionString;
+
+    public DbSet<User?>? Users{ get; set; }
     
+    public DbSet<UserServerData>? UsersServerData{ get; set; }
+
     public DbSet<Contact>? Contacts{ get; set; }
 
     public DbSet<Message>? Messages{ get; set; }
-    
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
-        optionsBuilder.UseSqlServer(
-            "Server=127.0.0.1,1433;Database=TcpChat;User Id=Server;Password=qwe123;TrustServerCertificate=True");
+
+    public TcpChatDataContext(string connectionString = ""){
+        _connectionString = connectionString;
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder){
+        if (_connectionString != string.Empty)
+            optionsBuilder.UseSqlServer(
+                _connectionString);
+        else
+            optionsBuilder.UseInMemoryDatabase("InMemoryDatabase");
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder){
         modelBuilder.Entity<Message>()
             .Property(m => m.IsDelivered)
             .HasColumnType("bit");
-        
+
         modelBuilder.Entity<Contact>()
             .Property(c => c.IsBlocked)
             .HasColumnType("bit");
-        
+
         modelBuilder.Entity<User>()
             .Property(u => u.IsOnline)
             .HasColumnType("bit");
-        
+
+        modelBuilder.Entity<User>().UseTptMappingStrategy();
+
         modelBuilder.Entity<Contact>()
             .HasOne(c => c.ContactOwner)
             .WithMany(u => u.Contacts)

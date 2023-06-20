@@ -5,13 +5,32 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TcpChatServer"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800" DataContext="{Binding ElementName= _serverViewModel}">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition></RowDefinition>
-            <RowDefinition></RowDefinition>
+            <RowDefinition Height="50" />
+            <RowDefinition />
         </Grid.RowDefinitions>
-        <Button Width="100" Height="40" Click="StartButtonBase_OnClick">Start</Button>
-        <Button Grid.Row="1" Width="100" Height="40" Click="ButtonBase_OnClick">Stop</Button>
+        <Border BorderBrush="Gray" BorderThickness="0.5" Margin="2">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="6*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="2*" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="2" Text="Port:" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                <TextBox Grid.Column="3" Margin="12 12 0 12" Text="{Binding Port}" VerticalAlignment="Center" />
+                <Button Grid.Column="4" Margin="12 12 0 12" Content="Start" Command="{Binding StartDelegateCommand}" />
+                <Button Grid.Column="5" Margin="12 12 12 12" Content="Stop" Command="{Binding StopDelegateCommand}" />
+
+            </Grid>
+        </Border>
+
+        <ListView Grid.Row="1" Margin="2 0 2 4" />
+
     </Grid>
 </Window>

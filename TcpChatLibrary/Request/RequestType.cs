@@ -1,5 +1,10 @@
-﻿namespace TcpChatLibrary.Request;
+﻿using System.Dynamic;
 
-public class RequestType{
-    
+namespace TcpChatLibrary.Request;
+
+public enum RequestType{
+    Post,
+    Get,
+    Put,
+    Delete
 }

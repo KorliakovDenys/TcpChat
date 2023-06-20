@@ -5,8 +5,29 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="clr-namespace:TcpChatClient"
         mc:Ignorable="d"
-        Title="AuthorizationWindow" Height="450" Width="800">
-    <Grid>
-        
+        Title="AuthorizationWindow" Height="180" Width="300" ResizeMode="NoResize" DataContext="{Binding ElementName=_authorizationViewModel}">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="3*"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Text="Login:" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4"/>
+        <TextBox Grid.Row="0" Grid.Column="1" Height="24" Text="{Binding Login}" VerticalAlignment="Center"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Password:" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4"/>
+        <PasswordBox Grid.Row="1" Grid.Column="1" Height="24" PasswordChanged="PasswordBox_OnPasswordChanged" VerticalAlignment="Center"/>
+        <Grid Grid.Row="2" Grid.ColumnSpan="2" Grid.Column="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Button Height="24" Content="Log In" Command="{Binding LogInDelegateCommand}"/>
+            <Button Grid.Column="2" Height="24" Content="Cancel" Command="{Binding CancelDelegateCommand}"/>
+        </Grid>
     </Grid>
 </Window>

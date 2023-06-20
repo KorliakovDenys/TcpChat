@@ -5,15 +5,85 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TcpChatClient"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800" MinHeight="300" MinWidth="600"
+        DataContext="{Binding ElementName=_viewModel}">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition></RowDefinition>
-            <RowDefinition></RowDefinition>
-            <RowDefinition></RowDefinition>
+            <RowDefinition Height="50" />
+            <RowDefinition />
         </Grid.RowDefinitions>
-        <Button Width="100" Height="40" Click="ConnectButtonBase_OnClick">Connect</Button>
-        <Button Grid.Row="1" Width="100" Height="40" Click="SendButtonBase_OnClick">SendMessage</Button>
-        <Button Grid.Row="2" Width="100" Height="40" Click="DisconnectButtonBase_OnClick">Disconnect</Button>
+        <Border BorderBrush="Gray" BorderThickness="0.5" Margin="2">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="6*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="2*" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Margin="12 0 0 0" Text="Ip:" VerticalAlignment="Center"
+                           HorizontalAlignment="Right" />
+                <TextBox Grid.Column="1" Margin="12 12 12 12" Text="{Binding Path=Ip}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="Port:" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                <TextBox Grid.Column="3" Margin="12 12 0 12" Text="{Binding Path=Port}" VerticalAlignment="Center"/>
+                <Button Grid.Column="4" Margin="12 12 0 12" Content="Connect"
+                        Command="{Binding Path=ConnectDelegateCommand}" />
+                <Button Grid.Column="5" Margin="12 12 12 12" Content="Disconnect"
+                        Command="{Binding Path=DisconnectDelegateCommand}" />
+
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="2 0 2 4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" MinWidth="100" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="3*" MinWidth="200" />
+            </Grid.ColumnDefinitions>
+
+            <TabControl>
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="All" Width="40"/>
+                    </TabItem.Header>
+                    <ListView BorderThickness="0" ItemsSource="{Binding Path=OnlineUsers}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Login}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </TabItem>
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Contacts" />
+                    </TabItem.Header>
+                    <ListView BorderThickness="0" ItemsSource="{Binding Path=Contacts}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding ContactUser.Login, FallbackValue='null login'}" />
+                                    <TextBlock Text="{Binding ContactUser.IsOnline, FallbackValue='null state'}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </TabItem>
+            </TabControl>
+
+            <GridSplitter Grid.Column="1" VerticalAlignment="Stretch" Width="4" BorderThickness="0"
+                          ShowsPreview="False"
+                          HorizontalAlignment="Center" Background="Transparent" />
+
+            <ListView Grid.Column="2">
+
+            </ListView>
+
+        </Grid>
+
     </Grid>
 </Window>

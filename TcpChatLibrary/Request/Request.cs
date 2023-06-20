@@ -1,5 +1,9 @@
-﻿namespace TcpChatLibrary.Request;
+﻿using TcpChatLibrary.Models;
 
-public class Request{
+namespace TcpChatLibrary.Request;
+
+public class Request: Model{
+    public RequestType Type{ get; set; }
     
+    public object? Body{ get; set; }
 }
