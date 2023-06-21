@@ -10,17 +10,27 @@ public class User : Model{
 
     public bool IsOnline{ get; set; }
 
-    [JsonIgnore] 
+    [JsonIgnore]
     public ICollection<Message>? Messages{ get; set; } = new List<Message>();
-    
+
     [JsonIgnore] 
     public ICollection<Contact>? Contacts{ get; set; } = new List<Contact>();
+
+
+    public User(){ }
+
+    public User(User other){
+        Id = other.Id;
+        Login = other.Login;
+        IsOnline = other.IsOnline;
+    }
 
     public override string ToString(){
         var sb = new StringBuilder();
         sb.AppendLine($"Login: {Login}");
         sb.AppendLine($"IsOnline: {IsOnline}");
         sb.AppendLine("Messages:");
+
         foreach (var message in Messages!){
             sb.AppendLine($"- {message}");
         }

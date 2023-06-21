@@ -6,7 +6,7 @@ namespace TcpChatLibrary.Data;
 public class TcpChatDataContext : DbContext{
     private readonly string _connectionString;
 
-    public DbSet<User?>? Users{ get; set; }
+    public DbSet<User>? Users{ get; set; }
     
     public DbSet<UserServerData>? UsersServerData{ get; set; }
 

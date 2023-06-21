@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -13,7 +12,6 @@ using TcpChatLibrary.Data;
 using TcpChatLibrary.Json;
 using TcpChatLibrary.Models;
 using TcpChatLibrary.Request;
-
 namespace TcpChatClient.ViewModels;
 
 public sealed class ClientViewModel : ViewModel{
@@ -24,7 +22,7 @@ public sealed class ClientViewModel : ViewModel{
 
     private readonly TcpChatDataContext _tcpChatDataContext = new();
 
-    private List<User?> _onlineUsers = new();
+    private List<User> _onlineUsers = new();
 
     private List<User?> _contacts = new();
 
@@ -32,11 +30,23 @@ public sealed class ClientViewModel : ViewModel{
 
     private string _port = string.Empty;
 
+    private string _messageInput = string.Empty;
+
     private DelegateCommand? _connectDelegateCommand;
 
     private DelegateCommand? _disconnectDelegateCommand;
 
-    public List<User?> OnlineUsers{
+    private DelegateCommand? _sendMessageDelegateCommand;
+
+    private User _selectedUser = new User();
+
+    private int _myId = -1;
+
+    public ClientViewModel(){
+        _tcpChatDataContext.SavedChanges += TcpChatDataContextOnSavedChanges;
+    }
+
+    public List<User> OnlineUsers{
         get => _onlineUsers;
         set{
             _onlineUsers = value;
@@ -52,14 +62,12 @@ public sealed class ClientViewModel : ViewModel{
         }
     }
 
-    public DelegateCommand ConnectDelegateCommand => _connectDelegateCommand ??= new DelegateCommand(ExecuteConnect);
-
-    public DelegateCommand DisconnectDelegateCommand =>
-        _disconnectDelegateCommand ??= new DelegateCommand(ExecuteDisconnect);
-
-
-    public ClientViewModel(){
-        _tcpChatDataContext.SavedChanges += TcpChatDataContextOnSavedChanges;
+    public User SelectedUser{
+        get => _selectedUser;
+        set{
+            _selectedUser = value;
+            OnPropertyChanged();
+        }
     }
 
     public string Ip{
@@ -77,6 +85,25 @@ public sealed class ClientViewModel : ViewModel{
             OnPropertyChanged();
         }
     }
+
+    public string MessageInput{
+        get => _messageInput;
+        set{
+            _messageInput = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public DelegateCommand ConnectDelegateCommand =>
+        _connectDelegateCommand ??= new DelegateCommand(ExecuteConnect);
+
+    public DelegateCommand DisconnectDelegateCommand =>
+        _disconnectDelegateCommand ??= new DelegateCommand(ExecuteDisconnect);
+
+
+    public DelegateCommand SendMessageDelegateCommand =>
+        _sendMessageDelegateCommand ??= new DelegateCommand(ExecuteSendMessage);
+
 
     private void ExecuteConnect(){
         var isValidIpAddress = Regex.IsMatch(Ip, IpPattern);
@@ -107,6 +134,7 @@ public sealed class ClientViewModel : ViewModel{
         authWindow.ShowDialog();
     }
 
+
     private void Connect(string ip, int port, string login, string password){
         TcpServerClient.Instance.ResponseReceived += OnResponseReceived;
         _ = TcpServerClient.Instance.ConnectAsync(ip, port, login, password);
@@ -123,8 +151,12 @@ public sealed class ClientViewModel : ViewModel{
             if (obj is not Request request) return;
 
             switch (JsonConvertor.ToObject(request.Body?.ToString() ?? string.Empty)){
-                case User user:{
-                    await HandleUser(request.Type, user);
+                case UserServerData userServerData:{
+                    _myId = userServerData.Id;
+                    break;
+                }
+                case User userClientData:{
+                    await HandleUser(request.Type, userClientData);
                     break;
                 }
                 case Message message:{
@@ -148,7 +180,25 @@ public sealed class ClientViewModel : ViewModel{
         }
     }
 
-    private Task HandleUser(RequestType type, User? user){
+    private void ExecuteDisconnect(){
+        Disconnect();
+        ClearAll();
+    }
+
+    private void ExecuteSendMessage(){
+        var request = new Request(){
+                Type = RequestType.Post,
+                Body = new Message{
+                    RecipientId = SelectedUser.Id, SenderId = _myId, MessageText = MessageInput,
+                    DispatchDateTime = DateTime.Now
+                }.ToJson()
+            }
+            .ToJson();
+
+        _ = TcpServerClient.Instance.SendMessageAsync(request);
+    }
+
+    private Task HandleUser(RequestType type, User user){
         try{
             switch (type){
                 case RequestType.Post:{
@@ -257,11 +307,6 @@ public sealed class ClientViewModel : ViewModel{
         catch (Exception exception){
             Debug.WriteLine(exception);
         }
-    }
-
-    private void ExecuteDisconnect(){
-        Disconnect();
-        ClearAll();
     }
 
     private void Disconnect(){

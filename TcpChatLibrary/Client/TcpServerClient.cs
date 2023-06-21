@@ -12,7 +12,7 @@ public sealed class TcpServerClient{
     private static TcpServerClient? _instance;
 
     private TcpClient? _tcpClient;
-
+    
     private NetworkStream? _networkStream;
 
     private CancellationTokenSource? _cancellationTokenSource;
@@ -61,6 +61,9 @@ public sealed class TcpServerClient{
         }
     }
 
+    public async Task SendMessageAsync(string message){
+        if (_networkStream != null) await TcpCommunicationHandler.SendMessageAsync(_networkStream, message);
+    }
 
     public void Disconnect(){
         TcpCommunicationHandler.Disconnect(_tcpClient!);

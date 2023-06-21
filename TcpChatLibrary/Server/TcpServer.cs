@@ -136,9 +136,12 @@ public sealed class TcpServer{
 
                     tcpClientsList.Add(sender);
                         
+                    await SendMessageAsync(senderStream,
+                        new Request.Request{ Type = RequestType.Post, Body = userServerData.ToJson() }.ToJson());
+                    
                     await foreach (var u in _dataContext.Users!){
                         await SendMessageAsync(senderStream,
-                            new Request.Request{ Type = RequestType.Post, Body = u?.ToJson() }.ToJson());
+                            new Request.Request{ Type = RequestType.Post, Body = new User(u).ToJson()}.ToJson());
                     }
 
                     await foreach (var c in _dataContext.Contacts!){
@@ -148,10 +151,10 @@ public sealed class TcpServer{
                         }
                     }
 
-                    await foreach (var c in _dataContext.Messages!){
-                        if (c.RecipientId == userServerData?.Id || c.SenderId == userServerData?.Id){
+                    await foreach (var m in _dataContext.Messages!){
+                        if (m.RecipientId == userServerData?.Id || m.SenderId == userServerData?.Id){
                             await SendMessageAsync(senderStream,
-                                new Request.Request{ Type = RequestType.Post, Body = c?.ToJson() }.ToJson());
+                                new Request.Request{ Type = RequestType.Post, Body = m?.ToJson() }.ToJson());
                         }
                     }
 
@@ -184,13 +187,13 @@ public sealed class TcpServer{
             
             switch (type){
                 case RequestType.Post:{
+                    _dataContext.Messages!.Add(message);
                     var userServerData = _authorizedTcpClients.Keys.First(u => u.Id == message.RecipientId);
 
+                    var response = new Request.Request{ Type = RequestType.Post, Body = message.ToJson() }.ToJson();
+                    
                     foreach (var tcpClient in _authorizedTcpClients[userServerData]){
-                        await foreach (var msg in _dataContext.Messages!){
-                            await SendMessageAsync(tcpClient.GetStream(),
-                                new Request.Request{ Type = RequestType.Post, Body = msg.ToJson() }.ToJson());
-                        }
+                            await SendMessageAsync(tcpClient.GetStream(), response);
                     }
 
                     break;

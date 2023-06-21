@@ -12,7 +12,7 @@
             <RowDefinition Height="50" />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <Border BorderBrush="Gray" BorderThickness="0.5" Margin="2">
+        <Border BorderBrush="DarkGray" BorderThickness="1" Margin="2">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -25,9 +25,9 @@
 
                 <TextBlock Grid.Column="0" Margin="12 0 0 0" Text="Ip:" VerticalAlignment="Center"
                            HorizontalAlignment="Right" />
-                <TextBox Grid.Column="1" Margin="12 12 12 12" Text="{Binding Path=Ip}" VerticalAlignment="Center"/>
+                <TextBox Grid.Column="1" Margin="12 12 12 12" Text="{Binding Path=Ip}" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="2" Text="Port:" VerticalAlignment="Center" HorizontalAlignment="Right" />
-                <TextBox Grid.Column="3" Margin="12 12 0 12" Text="{Binding Path=Port}" VerticalAlignment="Center"/>
+                <TextBox Grid.Column="3" Margin="12 12 0 12" Text="{Binding Path=Port}" VerticalAlignment="Center" />
                 <Button Grid.Column="4" Margin="12 12 0 12" Content="Connect"
                         Command="{Binding Path=ConnectDelegateCommand}" />
                 <Button Grid.Column="5" Margin="12 12 12 12" Content="Disconnect"
@@ -46,9 +46,10 @@
             <TabControl>
                 <TabItem>
                     <TabItem.Header>
-                        <TextBlock Text="All" Width="40"/>
+                        <TextBlock Text="All" Width="40" />
                     </TabItem.Header>
-                    <ListView BorderThickness="0" ItemsSource="{Binding Path=OnlineUsers}">
+                    <ListView BorderThickness="0" ItemsSource="{Binding Path=OnlineUsers}"
+                              SelectedItem="{Binding SelectedUser, FallbackValue=-1}">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -62,7 +63,9 @@
                     <TabItem.Header>
                         <TextBlock Text="Contacts" />
                     </TabItem.Header>
-                    <ListView BorderThickness="0" ItemsSource="{Binding Path=Contacts}">
+                    <ListView BorderThickness="0" ItemsSource="{Binding Path=Contacts}"
+                              SelectedItem="{Binding SelectedUser, FallbackValue=-1, UpdateSourceTrigger= PropertyChanged}"
+                              SelectionMode="Single">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -79,11 +82,29 @@
                           ShowsPreview="False"
                           HorizontalAlignment="Center" Background="Transparent" />
 
-            <ListView Grid.Column="2">
-
-            </ListView>
-
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="64"/>
+                </Grid.RowDefinitions>
+                <ListView Grid.Row="0"  SelectedItem="{Binding SelectedUser}"
+                          ItemsSource="{Binding SelectedUser.Messages}">
+                </ListView>
+                <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Height="4" BorderThickness="0"
+                              ShowsPreview="False" Background="Transparent"  VerticalAlignment="Center"/>
+                
+                <Border Grid.Row="2" BorderBrush="DarkGray" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="64"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox BorderBrush="Transparent" Text="{Binding MessageInput}"/>
+                        <Button Grid.Column="1" Content="Send" Margin="6" Command="{Binding SendMessageDelegateCommand}"/>
+                    </Grid>
+                </Border>
+            </Grid>
         </Grid>
-
     </Grid>
 </Window>

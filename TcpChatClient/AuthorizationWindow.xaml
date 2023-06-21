@@ -17,9 +17,9 @@
             <ColumnDefinition Width="3*"/>
         </Grid.ColumnDefinitions>
         <TextBlock Text="Login:" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4"/>
-        <TextBox Grid.Row="0" Grid.Column="1" Height="24" Text="{Binding Login}" VerticalAlignment="Center"/>
+        <TextBox Grid.Row="0" Grid.Column="1" Height="24" Text="{Binding Login}" VerticalContentAlignment="Center"/>
         <TextBlock Grid.Row="1" Grid.Column="0" Text="Password:" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4"/>
-        <PasswordBox Grid.Row="1" Grid.Column="1" Height="24" PasswordChanged="PasswordBox_OnPasswordChanged" VerticalAlignment="Center"/>
+        <PasswordBox Grid.Row="1" Grid.Column="1" Height="24" PasswordChanged="PasswordBox_OnPasswordChanged" VerticalContentAlignment="Center"/>
         <Grid Grid.Row="2" Grid.ColumnSpan="2" Grid.Column="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
