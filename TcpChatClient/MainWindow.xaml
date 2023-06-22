@@ -48,7 +48,7 @@
                     <TabItem.Header>
                         <TextBlock Text="All" Width="40" />
                     </TabItem.Header>
-                    <ListView BorderThickness="0" ItemsSource="{Binding Path=OnlineUsers}"
+                    <ListView BorderThickness="0" ItemsSource="{Binding Path=Users}"
                               SelectedItem="{Binding SelectedUser, FallbackValue=-1}">
                         <ListView.ItemTemplate>
                             <DataTemplate>
@@ -88,7 +88,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="64"/>
                 </Grid.RowDefinitions>
-                <ListView Grid.Row="0"  SelectedItem="{Binding SelectedUser}"
+                <ListView Grid.Row="0" SelectedItem="{Binding SelectedUser}"
                           ItemsSource="{Binding SelectedUser.Messages}">
                 </ListView>
                 <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Height="4" BorderThickness="0"

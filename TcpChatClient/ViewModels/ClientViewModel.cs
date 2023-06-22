@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
-using Microsoft.EntityFrameworkCore;
 using Prism.Commands;
 using TcpChatLibrary.Client;
-using TcpChatLibrary.Data;
 using TcpChatLibrary.Json;
 using TcpChatLibrary.Models;
 using TcpChatLibrary.Request;
+
 namespace TcpChatClient.ViewModels;
 
 public sealed class ClientViewModel : ViewModel{
@@ -20,11 +20,13 @@ public sealed class ClientViewModel : ViewModel{
 
     private const string PortPattern = @"^(\d{1,5})$";
 
-    private readonly TcpChatDataContext _tcpChatDataContext = new();
+    private readonly HashSet<User> _uniqueUserCheck = new();
 
-    private List<User> _onlineUsers = new();
+    private readonly HashSet<User> _uniqueContactCheck = new();
 
-    private List<User?> _contacts = new();
+    private ObservableCollection<User> _users = new();
+
+    private ObservableCollection<User> _contacts = new();
 
     private string _ip = string.Empty;
 
@@ -42,19 +44,15 @@ public sealed class ClientViewModel : ViewModel{
 
     private int _myId = -1;
 
-    public ClientViewModel(){
-        _tcpChatDataContext.SavedChanges += TcpChatDataContextOnSavedChanges;
-    }
-
-    public List<User> OnlineUsers{
-        get => _onlineUsers;
+    public ObservableCollection<User> Users{
+        get => _users;
         set{
-            _onlineUsers = value;
+            _users = value;
             OnPropertyChanged();
         }
     }
 
-    public List<User?> Contacts{
+    public ObservableCollection<User> Contacts{
         get => _contacts;
         set{
             _contacts = value;
@@ -171,7 +169,6 @@ public sealed class ClientViewModel : ViewModel{
                     break;
             }
 
-            await _tcpChatDataContext.SaveChangesAsync();
 
             Debug.WriteLine(response);
         }
@@ -186,36 +183,65 @@ public sealed class ClientViewModel : ViewModel{
     }
 
     private void ExecuteSendMessage(){
-        var request = new Request(){
-                Type = RequestType.Post,
-                Body = new Message{
-                    RecipientId = SelectedUser.Id, SenderId = _myId, MessageText = MessageInput,
-                    DispatchDateTime = DateTime.Now
-                }.ToJson()
-            }
-            .ToJson();
+        var message = new Message{
+            RecipientId = SelectedUser.Id, SenderId = _myId, MessageText = MessageInput,
+            DispatchDateTime = DateTime.Now
+        };
+        var request = new Request{
+            Type = RequestType.Post,
+            Body = message.ToJson()
+        };
 
-        _ = TcpServerClient.Instance.SendMessageAsync(request);
+        HandleMessage(request.Type, message);
+
+        _ = TcpServerClient.Instance.SendMessageAsync(request.ToJson());
+        MessageInput = "";
+    }
+
+    private void AddUniqueUser(User user){
+        if (_uniqueUserCheck.Add(user)){
+            Users.Add(user);
+        }
+    }
+
+    private void RemoveUniqueUser(User user){
+        if (_uniqueUserCheck.Remove(user)){
+            Users.Remove(user);
+        }
+    }
+
+    private void AddUniqueContact(User user){
+        if (_uniqueContactCheck.Add(user)){
+            Contacts.Add(user);
+        }
+    }
+
+    private void RemoveUniqueContact(User user){
+        if (_uniqueContactCheck.Remove(user)){
+            Contacts.Remove(user);
+        }
     }
 
     private Task HandleUser(RequestType type, User user){
         try{
             switch (type){
                 case RequestType.Post:{
-                    _tcpChatDataContext.Users?.Add(user);
+                    AddUniqueUser(user);
                     break;
                 }
                 case RequestType.Get:{
                     break;
                 }
                 case RequestType.Put:{
-                    _tcpChatDataContext.Users?.Remove(user);
-                    _tcpChatDataContext.Users?.Add(user);
+                    lock (new object()){
+                        var userIndex = Users.IndexOf(user);
+                        if (userIndex >= 0) Users[userIndex].CopyFrom(user);
+                    }
 
                     break;
                 }
                 case RequestType.Delete:{
-                    _tcpChatDataContext.Users?.Remove(user);
+                    RemoveUniqueUser(user);
 
                     break;
                 }
@@ -233,23 +259,37 @@ public sealed class ClientViewModel : ViewModel{
 
     private Task HandleMessage(RequestType type, Message message){
         try{
+            var sender = Users.First(u => u.Id == message.SenderId);
+
+            var recipient = Users.First(u => u.Id == message.RecipientId);
+
+            message.Sender = sender;
+
+            message.Recipient = recipient;
+
             switch (type){
                 case RequestType.Post:{
-                    _tcpChatDataContext.Messages?.Add(message);
+                    if (message.RecipientId == _myId && !message.IsDelivered){
+                        message.IsDelivered = true;
+                        var request = new Request{ Type = RequestType.Put, Body = message.ToJson() }.ToJson();
+                        _ = TcpServerClient.Instance.SendMessageAsync(request);
+                    }
 
+                    if (sender.Id != _myId) sender.Messages?.Add(message);
+                    recipient.Messages?.Add(message);
+ 
                     break;
                 }
                 case RequestType.Get:{
                     break;
                 }
                 case RequestType.Put:{
-                    _tcpChatDataContext.Messages?.Remove(message);
-                    _tcpChatDataContext.Messages?.Add(message);
-
+                    var msg = sender.Messages?.First(m => m.Id == message.Id);
+                    msg?.CopyFrom(message);
                     break;
                 }
                 case RequestType.Delete:{
-                    _tcpChatDataContext.Messages?.Remove(message);
+                    sender.Messages?.Remove(message);
 
                     break;
                 }
@@ -266,9 +306,11 @@ public sealed class ClientViewModel : ViewModel{
 
     private Task HandleContact(RequestType type, Contact contact){
         try{
+            var contactUser = Users.First(u => u.Id == contact.ContactUserId);
+
             switch (type){
                 case RequestType.Post:{
-                    _tcpChatDataContext.Contacts?.Add(contact);
+                    AddUniqueContact(contactUser);
 
                     break;
                 }
@@ -276,13 +318,14 @@ public sealed class ClientViewModel : ViewModel{
                     break;
                 }
                 case RequestType.Put:{
-                    _tcpChatDataContext.Contacts?.Remove(contact);
-                    _tcpChatDataContext.Contacts?.Add(contact);
+                    var first = contactUser.Contacts?.First(c => c.Id == contact.Id);
+
+                    first?.CopyFrom(contact);
 
                     break;
                 }
                 case RequestType.Delete:{
-                    _tcpChatDataContext.Contacts?.Remove(contact);
+                    RemoveUniqueContact(contactUser);
 
                     break;
                 }
@@ -297,18 +340,6 @@ public sealed class ClientViewModel : ViewModel{
         return Task.CompletedTask;
     }
 
-    private void TcpChatDataContextOnSavedChanges(object? sender, SavedChangesEventArgs e){
-        if (sender is not TcpChatDataContext dbContext) return;
-
-        try{
-            OnlineUsers = dbContext.Users!.ToList();
-            Contacts = dbContext.Contacts!.Select(c => c.ContactUser).ToList();
-        }
-        catch (Exception exception){
-            Debug.WriteLine(exception);
-        }
-    }
-
     private void Disconnect(){
         try{
             TcpServerClient.Instance.Disconnect();
@@ -320,7 +351,9 @@ public sealed class ClientViewModel : ViewModel{
     }
 
     private void ClearAll(){
-        OnlineUsers.Clear();
+        Users.Clear();
         Contacts.Clear();
+        _uniqueContactCheck.Clear();
+        _uniqueUserCheck.Clear();
     }
 }

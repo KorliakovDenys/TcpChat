@@ -4,7 +4,7 @@ using TcpChatLibrary.Json;
 
 namespace TcpChatLibrary.Models;
 
-public abstract class Model : IJsonAble{
+public abstract class Model : ViewModel, IJsonAble {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     [Key]
     public int Id{ get; set; }

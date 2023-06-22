@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Net.Sockets;
+using Microsoft.EntityFrameworkCore.Migrations.Internal;
 using TcpChatLibrary.Models;
 using TcpChatLibrary.Request;
 using TcpChatLibrary.Tcp;
@@ -35,6 +36,10 @@ public sealed class TcpServerClient{
 
     public async Task ConnectAsync(string iPAddress, int port, string login, string password){
         try{
+            if (_tcpClient is not null){
+                if(_tcpClient.Connected) Disconnect();
+            }
+            
             _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(new CancellationToken());
 
             _tcpClient = new TcpClient();

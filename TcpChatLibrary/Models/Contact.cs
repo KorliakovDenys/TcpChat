@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 namespace TcpChatLibrary.Models;
 
 [Table("Contact")]
-public class Contact : Model{
+public class Contact : Model, ICopyable{
     public int ContactOwnerId{ get; set; }
 
     [JsonIgnore]
@@ -22,5 +22,11 @@ public class Contact : Model{
     public override string ToString(){
         return $"Contact: [ContactOwnerId={ContactOwnerId}, ContactOwner={ContactOwner!.Login}, " +
                $"ContactUserId={ContactUserId}, ContactUser={ContactUser!.Login}, IsBlocked={IsBlocked}]";
+    }
+
+    public void CopyFrom(object other){
+        if(other is not Contact contact) return;
+
+        this.IsBlocked = contact.IsBlocked;
     }
 }

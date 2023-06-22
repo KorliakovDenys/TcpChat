@@ -14,16 +14,12 @@ public class TcpChatDataContext : DbContext{
 
     public DbSet<Message>? Messages{ get; set; }
 
-    public TcpChatDataContext(string connectionString = ""){
-        _connectionString = connectionString;
+    public TcpChatDataContext(){
+        _connectionString = "Server=127.0.0.1,1433;Database=TcpChat;User Id=Server;Password=qwe123;TrustServerCertificate=True";
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder){
-        if (_connectionString != string.Empty)
-            optionsBuilder.UseSqlServer(
-                _connectionString);
-        else
-            optionsBuilder.UseInMemoryDatabase("InMemoryDatabase");
+            optionsBuilder.UseSqlServer(_connectionString);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder){

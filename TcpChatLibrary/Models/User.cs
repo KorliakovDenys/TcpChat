@@ -1,28 +1,49 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 using Newtonsoft.Json;
 
 namespace TcpChatLibrary.Models;
 
 [Table("User")]
-public class User : Model{
-    public string Login{ get; set; } = null!;
+public class User : Model, ICopyable{
+    private string _login = string.Empty;
 
-    public bool IsOnline{ get; set; }
+    private bool _isOnline = false;
 
-    [JsonIgnore]
-    public ICollection<Message>? Messages{ get; set; } = new List<Message>();
+    public string Login{
+        get => _login;
+        set{
+            _login = value;
+            OnPropertyChanged();
+        }
+    }
+    
+    public bool IsOnline{
+        get => _isOnline;
+        set{
+            _isOnline = value;
+            OnPropertyChanged();
+        }
+    }
 
-    [JsonIgnore] 
-    public ICollection<Contact>? Contacts{ get; set; } = new List<Contact>();
+    [JsonIgnore] public ICollection<Message>? Messages{ get; set; } = new ObservableCollection<Message>();
+
+    [JsonIgnore] public ICollection<Contact>? Contacts{ get; set; } = new ObservableCollection<Contact>();
 
 
     public User(){ }
 
     public User(User other){
-        Id = other.Id;
-        Login = other.Login;
-        IsOnline = other.IsOnline;
+        CopyFrom(other);
+    }
+
+    public void CopyFrom(object other){
+        if(other is not User user) return;
+        
+        this.Id = user.Id;
+        this.Login = user.Login;
+        this.IsOnline = user.IsOnline;
     }
 
     public override string ToString(){

@@ -15,10 +15,9 @@ public sealed class TcpServer{
 
     private static TcpServer? _instance;
 
-    private readonly TcpChatDataContext _dataContext =
-        new("Server=127.0.0.1,1433;Database=TcpChat;User Id=Server;Password=qwe123;TrustServerCertificate=True");
+    private readonly TcpChatDataContext _dataContext = new();
 
-    private readonly ConcurrentDictionary<UserServerData, List<TcpClient>> _authorizedTcpClients = new();
+    private readonly ConcurrentDictionary<UserServerData, HashSet<TcpClient>> _authorizedTcpClients = new();
 
     private TcpListener? _tcpListener;
 
@@ -69,8 +68,6 @@ public sealed class TcpServer{
         _tcpListener?.Stop();
     }
 
-    
-
     private async Task HandleResponseAsync(TcpClient sender, string response){
         try{
             var obj = JsonConvertor.ToObject(response);
@@ -94,7 +91,10 @@ public sealed class TcpServer{
                     break;
             }
 
-            await _dataContext.SaveChangesAsync();
+            lock (PadLock){
+                _ = _dataContext.SaveChangesAsync();
+            }
+
 
             Debug.WriteLine(response);
         }
@@ -107,9 +107,14 @@ public sealed class TcpServer{
         foreach (var userServerData in _authorizedTcpClients.Keys){
             foreach (var client in _authorizedTcpClients[userServerData].Where(client => client.Equals(tcpClient))){
                 _authorizedTcpClients[userServerData].Remove(client);
-                if (_authorizedTcpClients[userServerData].Count == 0){
-                    userServerData.IsOnline = false;
-                }
+                if (_authorizedTcpClients[userServerData].Count != 0) continue;
+
+                var first = _dataContext.Users!.First(u => u.Id == userServerData.Id);
+
+                first.IsOnline = false;
+
+                _ = BroadCastAsync(new Request.Request
+                    { Type = RequestType.Put, Body = new User(userServerData!).ToJson() }.ToJson());
             }
         }
     }
@@ -122,41 +127,46 @@ public sealed class TcpServer{
                     break;
                 }
                 case RequestType.Get:{
-                    if (user is not UserServerData userServerData){ return; }
+                    if (user is not UserServerData userServerData){
+                        return;
+                    }
 
-                    var fetchedUserServerData = _dataContext.UsersServerData!.First(u => u.Login == userServerData.Login);
-                    
+                    var fetchedUserServerData =
+                        _dataContext.UsersServerData!.First(u => u.Login == userServerData.Login);
+
                     if (fetchedUserServerData.Password != userServerData.Password) return;
 
                     fetchedUserServerData.IsOnline = true;
 
-                    userServerData = fetchedUserServerData;
-                    
-                    var tcpClientsList = _authorizedTcpClients.GetOrAdd(userServerData, _ => new List<TcpClient>());
+                    var tcpClientsList =
+                        _authorizedTcpClients.GetOrAdd(fetchedUserServerData, _ => new HashSet<TcpClient>());
 
                     tcpClientsList.Add(sender);
-                        
+
                     await SendMessageAsync(senderStream,
-                        new Request.Request{ Type = RequestType.Post, Body = userServerData.ToJson() }.ToJson());
-                    
+                        new Request.Request{ Type = RequestType.Post, Body = fetchedUserServerData.ToJson() }.ToJson());
+
                     await foreach (var u in _dataContext.Users!){
                         await SendMessageAsync(senderStream,
-                            new Request.Request{ Type = RequestType.Post, Body = new User(u).ToJson()}.ToJson());
+                            new Request.Request{ Type = RequestType.Post, Body = new User(u).ToJson() }.ToJson());
                     }
 
                     await foreach (var c in _dataContext.Contacts!){
-                        if (c.ContactOwnerId == userServerData?.Id){
+                        if (c.ContactOwnerId == fetchedUserServerData?.Id){
                             await SendMessageAsync(senderStream,
                                 new Request.Request{ Type = RequestType.Post, Body = c?.ToJson() }.ToJson());
                         }
                     }
 
                     await foreach (var m in _dataContext.Messages!){
-                        if (m.RecipientId == userServerData?.Id || m.SenderId == userServerData?.Id){
+                        if (m.RecipientId == fetchedUserServerData?.Id || m.SenderId == fetchedUserServerData?.Id){
                             await SendMessageAsync(senderStream,
                                 new Request.Request{ Type = RequestType.Post, Body = m?.ToJson() }.ToJson());
                         }
                     }
+
+                    await BroadCastAsync(new Request.Request
+                        { Type = RequestType.Put, Body = new User(fetchedUserServerData!).ToJson() }.ToJson());
 
                     break;
                 }
@@ -176,24 +186,32 @@ public sealed class TcpServer{
         }
     }
 
+    private async Task BroadCastAsync(string message){
+        foreach (var tcpClients in _authorizedTcpClients.Values){
+            foreach (var client in tcpClients){
+                await SendMessageAsync(client.GetStream(), message);
+            }
+        }
+    }
+
     private async Task HandleMessage(TcpClient sender, RequestType type, Message message){
         try{
             var recipientContact = _dataContext.Contacts!.First(c =>
                 c.ContactOwnerId == message.RecipientId && c.ContactUserId == message.SenderId);
-            
+
             if (recipientContact.IsBlocked){
                 return;
             }
-            
+
             switch (type){
                 case RequestType.Post:{
-                    _dataContext.Messages!.Add(message);
+                    await _dataContext.Messages!.AddAsync(message);
                     var userServerData = _authorizedTcpClients.Keys.First(u => u.Id == message.RecipientId);
 
                     var response = new Request.Request{ Type = RequestType.Post, Body = message.ToJson() }.ToJson();
-                    
+
                     foreach (var tcpClient in _authorizedTcpClients[userServerData]){
-                            await SendMessageAsync(tcpClient.GetStream(), response);
+                        await SendMessageAsync(tcpClient.GetStream(), response);
                     }
 
                     break;
@@ -202,6 +220,18 @@ public sealed class TcpServer{
                     break;
                 }
                 case RequestType.Put:{
+                    var first = _dataContext.Messages!.First(m => m.Id == message.Id);
+
+                    first.CopyFrom(message);
+
+                    var userServerData = _authorizedTcpClients.Keys.First(u => u.Id == message.SenderId);
+
+                    var request = new Request.Request{ Type = RequestType.Put, Body = message.ToJson() }.ToJson();
+
+                    foreach (var client in _authorizedTcpClients[userServerData]){
+                        await SendMessageAsync(client.GetStream(), request);
+                    }
+
                     break;
                 }
                 case RequestType.Delete:{
@@ -220,7 +250,7 @@ public sealed class TcpServer{
         try{
             switch (type){
                 case RequestType.Post:{
-                    _dataContext.Contacts?.Add(contact);
+                    _ = _dataContext.Contacts?.AddAsync(contact);
                     break;
                 }
                 case RequestType.Get:{
@@ -228,7 +258,7 @@ public sealed class TcpServer{
                 }
                 case RequestType.Put:{
                     _dataContext.Contacts?.Remove(contact);
-                    _dataContext.Contacts?.Add(contact);
+                    _ = _dataContext.Contacts?.AddAsync(contact);
                     break;
                 }
                 case RequestType.Delete:{
@@ -245,6 +275,4 @@ public sealed class TcpServer{
 
         return Task.CompletedTask;
     }
-
-    
 }
