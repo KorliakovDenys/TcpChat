@@ -40,7 +40,7 @@ public sealed class ClientViewModel : ViewModel{
 
     private DelegateCommand? _sendMessageDelegateCommand;
 
-    private User _selectedUser = new User();
+    private User _selectedUser = new ();
 
     private int _myId = -1;
 

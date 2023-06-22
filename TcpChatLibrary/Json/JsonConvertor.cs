@@ -13,7 +13,6 @@ public static class JsonConvertor {
     };
     
     public static string ToJson(object obj){
-        
         var jsonString = JsonConvert.SerializeObject(obj, Settings);
 
         return jsonString;

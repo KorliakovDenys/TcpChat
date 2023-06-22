@@ -53,14 +53,14 @@ public static class TcpCommunicationHandler{
         }
     }
     public static async Task SendMessageAsync(Stream networkStream, string message){
-        var headerBuffer = new byte[sizeof(int)];
-        var buffer = Encoding.UTF8.GetBytes(message);
-        BinaryPrimitives.WriteInt32LittleEndian(headerBuffer, buffer.Length);
-
-        await networkStream.WriteAsync(headerBuffer, 0, headerBuffer.Length);
-        await networkStream.WriteAsync(buffer, 0, buffer.Length);
-        await networkStream.FlushAsync().ConfigureAwait(false);
-    }
+             var headerBuffer = new byte[sizeof(int)];
+             var buffer = Encoding.UTF8.GetBytes(message);
+             BinaryPrimitives.WriteInt32LittleEndian(headerBuffer, buffer.Length);
+     
+             await networkStream.WriteAsync(headerBuffer, 0, headerBuffer.Length);
+             await networkStream.WriteAsync(buffer, 0, buffer.Length);
+             await networkStream.FlushAsync().ConfigureAwait(false);
+         }
 
     public static void Disconnect(TcpClient client){
         try{

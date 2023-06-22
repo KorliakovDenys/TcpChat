@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Net.Sockets;
-using Microsoft.EntityFrameworkCore.Migrations.Internal;
 using TcpChatLibrary.Models;
 using TcpChatLibrary.Request;
 using TcpChatLibrary.Tcp;
